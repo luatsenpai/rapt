@@ -13,10 +13,9 @@ import subprocess
 import hashlib
 
 from . import plat
-from . import iconmaker
 
 import rapt.plat as plat
-import rapt.iconmaker as iconmaker
+
 
 __ = plat.__
 
@@ -277,25 +276,6 @@ def zip_directory(zf, prefix, dn):
             fn = os.path.join(dirname, fn)
             archive_fn = os.path.join(prefix, os.path.relpath(fn, dn))
             zf.write(fn, archive_fn)
-
-
-def copy_presplash(directory, name, default):
-    """
-    Copies the presplash file.
-    """
-
-    for ext in [ ".png", ".jpg" ]:
-
-        fn = os.path.join(directory, name + ext)
-
-        if os.path.exists(fn):
-            break
-    else:
-        fn = default
-        ext = os.path.splitext(fn)[1]
-
-    shutil.copy(fn, plat.path("project/app/src/main/assets/" + name + ext))
-
 
 def split_renpy(directory):
     """
@@ -563,13 +543,6 @@ def build(iface, directory, commands, launch=False, finished=None):
             config=config,
             sdkpath=plat.path("Sdk"),
             )
-
-    if config.update_icons:
-        iconmaker.IconMaker(directory, config)
-
-    # Copy the presplash files.
-    copy_presplash(directory, "android-presplash", default_presplash)
-
     # Find and clean the apkdirs.
 
     apkdirs = [ ]

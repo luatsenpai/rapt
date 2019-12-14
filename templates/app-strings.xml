@@ -5,5 +5,6 @@
     {% if private_version %}
     <string name="private_version">{{ private_version }}</string>
     {% endif %}
-
+    <string name="checking_config">Checking plugin configuration...</string>
+    <string name="got_no_data">Could not get data from JoiPlayer.</string>
 </resources>

@@ -1,35 +1,41 @@
 package org.renpy.android;
 
-import org.libsdl.app.SDLActivity;
-
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.PowerManager;
 import android.os.Vibrator;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnSystemUiVisibilityChangeListener;
+import android.view.ViewGroup;
+import android.view.inputmethod.BaseInputConnection;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import org.libsdl.app.SDLActivity;
+import org.renpy.iap.Store;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-
-import org.renpy.iap.Store;
 
 public class PythonSDLActivity extends SDLActivity {
 
@@ -51,6 +57,23 @@ public class PythonSDLActivity extends SDLActivity {
      * can stick it in one of the other cells..
      */
     public LinearLayout mVbox;
+
+    public Integer xKeyCode  = KeyEvent.KEYCODE_X;
+    public Integer yKeyCode  = KeyEvent.KEYCODE_Y;
+    public RelativeLayout joystickLay;
+    public JoystickButton joystickBtn;
+    public ImageButton upBtn;
+    public ImageButton downBtn;
+    public ImageButton leftBtn;
+    public ImageButton rightBtn;
+    public ImageButton closeBtn;
+    public ImageButton rotateBtn;
+    public ImageButton keyboardBtn;
+    public Button aBtn;
+    public Button bBtn;
+    public Button xBtn;
+    public Button yBtn;
+    public BaseInputConnection inputConnection;
 
     ResourceManager resourceManager;
 
@@ -81,6 +104,7 @@ public class PythonSDLActivity extends SDLActivity {
         mVbox.removeView(view);
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public void setContentView(View view) {
         mFrameLayout = new FrameLayout(this);
@@ -90,7 +114,240 @@ public class PythonSDLActivity extends SDLActivity {
         mVbox.setOrientation(LinearLayout.VERTICAL);
         mVbox.addView(mFrameLayout, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, (float) 1.0));
 
+        FrameLayout frameLayout = new FrameLayout(this);
+        frameLayout.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT));
+        getLayoutInflater().inflate(R.layout.main_layout,frameLayout);
+        mFrameLayout.addView(frameLayout);
         super.setContentView(mVbox);
+
+        joystickLay = findViewById(R.id.joystickLay);
+        joystickBtn = findViewById(R.id.joystickBtn);
+        upBtn = findViewById(R.id.upBtn);
+        downBtn = findViewById(R.id.downBtn);
+        leftBtn = findViewById(R.id.leftBtn);
+        rightBtn = findViewById(R.id.rightBtn);
+        closeBtn = findViewById(R.id.closeBtn);
+        rotateBtn = findViewById(R.id.rotateBtn);
+        keyboardBtn = findViewById(R.id.keyboardBtn);
+        aBtn = findViewById(R.id.aBtn);
+        bBtn = findViewById(R.id.bBtn);
+        xBtn = findViewById(R.id.xBtn);
+        yBtn = findViewById(R.id.yBtn);
+        joystickLay.setVisibility(View.INVISIBLE);
+        xKeyCode = getIntent().getIntExtra("xKeyCode",xKeyCode);
+        yKeyCode = getIntent().getIntExtra("yKeyCode",yKeyCode);
+        int btnOpacity = 100;
+        if (getIntent().hasExtra("btnOpacity")){
+            btnOpacity = Integer.parseInt(getIntent().getStringExtra("btnOpacity"));
+        }
+        joystickBtn.getBackground().setAlpha(Math.round(btnOpacity * 2.25f));
+        upBtn.getBackground().setAlpha(Math.round(btnOpacity * 2.25f));
+        downBtn.getBackground().setAlpha(Math.round(btnOpacity * 2.25f));
+        leftBtn.getBackground().setAlpha(Math.round(btnOpacity * 2.25f));
+        rightBtn.getBackground().setAlpha(Math.round(btnOpacity * 2.25f));
+        closeBtn.getBackground().setAlpha(Math.round(btnOpacity * 2.25f));
+        rotateBtn.getBackground().setAlpha(Math.round(btnOpacity * 2.25f));
+        keyboardBtn.getBackground().setAlpha(Math.round(btnOpacity * 2.25f));
+        aBtn.getBackground().setAlpha(Math.round(btnOpacity * 2.25f));
+        bBtn.getBackground().setAlpha(Math.round(btnOpacity * 2.25f));
+        xBtn.getBackground().setAlpha(Math.round(btnOpacity * 2.25f));
+        yBtn.getBackground().setAlpha(Math.round(btnOpacity * 2.25f));
+        inputConnection = new BaseInputConnection(view.getRootView(),true);
+        joystickBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (joystickLay.getVisibility() == View.INVISIBLE){
+                    Log.d("WebView","Show Joystick");
+                    joystickLay.setVisibility(View.VISIBLE);
+                    joystickLay.bringToFront();
+                    joystickLay.invalidate();
+                    joystickBtn.bringToFront();
+                    joystickBtn.invalidate();
+                } else {
+                    joystickLay.setVisibility(View.INVISIBLE);
+                    Log.d("WebView","Hide Joystick");
+                }
+            }
+        });
+
+        upBtn.setOnTouchListener(new View.OnTouchListener() {
+            @SuppressLint("ClickableViewAccessibility")
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (motionEvent.getAction() == MotionEvent.ACTION_DOWN){
+                    SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_DPAD_UP);
+                    return true;
+                } else if (motionEvent.getAction() == MotionEvent.ACTION_CANCEL || motionEvent.getAction() == MotionEvent.ACTION_UP){
+                    SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_DPAD_UP);
+                    return true;
+                }
+                return false;
+            }
+        });
+
+
+
+        downBtn.setOnTouchListener(new View.OnTouchListener() {
+            @SuppressLint("ClickableViewAccessibility")
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (motionEvent.getAction() == MotionEvent.ACTION_DOWN){
+                    SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_DPAD_DOWN);
+                    return true;
+                } else if (motionEvent.getAction() == MotionEvent.ACTION_CANCEL || motionEvent.getAction() == MotionEvent.ACTION_UP){
+                    SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_DPAD_DOWN);
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        leftBtn.setOnTouchListener(new View.OnTouchListener() {
+            @SuppressLint("ClickableViewAccessibility")
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (motionEvent.getAction() == MotionEvent.ACTION_DOWN){
+                    SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_DPAD_LEFT);
+                    return true;
+                } else if (motionEvent.getAction() == MotionEvent.ACTION_CANCEL || motionEvent.getAction() == MotionEvent.ACTION_UP){
+                    SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_DPAD_LEFT);
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        rightBtn.setOnTouchListener(new View.OnTouchListener() {
+            @SuppressLint("ClickableViewAccessibility")
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (motionEvent.getAction() == MotionEvent.ACTION_DOWN){
+                    SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_DPAD_RIGHT);
+                    return true;
+                } else if (motionEvent.getAction() == MotionEvent.ACTION_CANCEL || motionEvent.getAction() == MotionEvent.ACTION_UP){
+                    SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_DPAD_RIGHT);
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        aBtn.setOnTouchListener(new View.OnTouchListener() {
+            @SuppressLint("ClickableViewAccessibility")
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (motionEvent.getAction() == MotionEvent.ACTION_DOWN){
+                    SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_ENTER);
+                    return true;
+                } else if (motionEvent.getAction() == MotionEvent.ACTION_CANCEL || motionEvent.getAction() == MotionEvent.ACTION_UP){
+                    SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_ENTER);
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        bBtn.setOnTouchListener(new View.OnTouchListener() {
+            @SuppressLint("ClickableViewAccessibility")
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (motionEvent.getAction() == MotionEvent.ACTION_DOWN){
+                    SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_ESCAPE);
+                    return true;
+                } else if (motionEvent.getAction() == MotionEvent.ACTION_CANCEL || motionEvent.getAction() == MotionEvent.ACTION_UP){
+                    SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_ESCAPE);
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        xBtn.setText(KeyEvent.keyCodeToString(xKeyCode).replace("KEYCODE_",""));
+
+        xBtn.setOnTouchListener(new View.OnTouchListener() {
+            @SuppressLint("ClickableViewAccessibility")
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (motionEvent.getAction() == MotionEvent.ACTION_DOWN){
+                    SDLActivity.onNativeKeyDown(xKeyCode);
+                    return true;
+                } else if (motionEvent.getAction() == MotionEvent.ACTION_CANCEL || motionEvent.getAction() == MotionEvent.ACTION_UP){
+                    SDLActivity.onNativeKeyUp(xKeyCode);
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        yBtn.setText(KeyEvent.keyCodeToString(yKeyCode).replace("KEYCODE_",""));
+
+        yBtn.setOnTouchListener(new View.OnTouchListener() {
+            @SuppressLint("ClickableViewAccessibility")
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (motionEvent.getAction() == MotionEvent.ACTION_DOWN){
+                    SDLActivity.onNativeKeyDown(yKeyCode);
+                    return true;
+                } else if (motionEvent.getAction() == MotionEvent.ACTION_CANCEL || motionEvent.getAction() == MotionEvent.ACTION_UP){
+                    SDLActivity.onNativeKeyUp(yKeyCode);
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        rotateBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                switch (getRequestedOrientation()){
+                    case ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE:
+                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
+                        break;
+                    case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
+                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
+                        break;
+                    case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
+                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
+                        break;
+                    case ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE:
+                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
+                        break;
+                    case ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT:
+                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                        break;
+                    case ActivityInfo.SCREEN_ORIENTATION_PORTRAIT:
+                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                        break;
+                    case ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT:
+                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                        break;
+                    case ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT:
+                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                        break;
+
+                }
+            }
+        });
+
+        keyboardBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm.isAcceptingText()){
+                    imm.hideSoftInputFromWindow(view.getWindowToken(),0);
+                } else {
+                    imm.toggleSoftInputFromWindow(view.getWindowToken(),0,0);
+                }
+            }
+        });
+
+
+        closeBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onDestroy();
+            }
+        });
     }
 
 
@@ -254,8 +511,17 @@ public class PythonSDLActivity extends SDLActivity {
 
         resourceManager = new ResourceManager(this);
 
-        File oldExternalStorage = new File(Environment.getExternalStorageDirectory(), getPackageName());
-        File externalStorage = getExternalFilesDir(null);
+        File gameDir = new File("");
+        if (getIntent() != null && getIntent().hasExtra("gameFolder")){
+            gameDir = new  File(getIntent().getStringExtra("gameFolder"));
+        }
+
+        File oldExternalStorage = gameDir;
+        File externalStorage = gameDir;
+        if (!externalStorage.exists()){
+            externalStorage.mkdirs();
+        }
+
         File path;
 
         if (externalStorage == null) {
@@ -275,6 +541,30 @@ public class PythonSDLActivity extends SDLActivity {
         nativeSetEnv("ANDROID_PRIVATE", getFilesDir().getAbsolutePath());
         nativeSetEnv("ANDROID_PUBLIC",  externalStorage.getAbsolutePath());
         nativeSetEnv("ANDROID_OLD_PUBLIC", oldExternalStorage.getAbsolutePath());
+
+        if (getIntent().hasExtra("renpy_developer")){
+            if (getIntent().getBooleanExtra("renpy_developer",false)){
+                nativeSetEnv("JOIPLAY_DEVELOPER", "1");
+            } else {
+                nativeSetEnv("JOIPLAY_DEVELOPER", "0");
+            }
+        }
+
+        if (getIntent().hasExtra("renpy_hw_video")){
+            if (getIntent().getBooleanExtra("renpy_hw_video",false)){
+                nativeSetEnv("JOIPLAY_HW_VIDEO", "1");
+            } else {
+                nativeSetEnv("JOIPLAY_HW_VIDEO", "0");
+            }
+        }
+
+        if (getIntent().hasExtra("renpy_autosave")){
+            if (getIntent().getBooleanExtra("renpy_autosave",false)){
+                nativeSetEnv("JOIPLAY_AUTOSAVE", "1");
+            } else {
+                nativeSetEnv("JOIPLAY_AUTOSAVE", "0");
+            }
+        }
 
         // Figure out the APK path.
         String apkFilePath;
@@ -302,7 +592,7 @@ public class PythonSDLActivity extends SDLActivity {
 
         Log.v("python", "Finished preparePython.");
 
-    };
+    }
 
     // Code to support devicePurchase. /////////////////////////////////////////
 
@@ -354,7 +644,7 @@ public class PythonSDLActivity extends SDLActivity {
     public void setWakeLock(boolean active) {
         if (wakeLock == null) {
             PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-            wakeLock = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "Screen On");
+            wakeLock = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, ":Screen On");
             wakeLock.setReferenceCounted(false);
         }
 
